@@ -12,8 +12,6 @@ import asyncio, aiohttp
 from typing import Literal
 from nicegui import ui
 import datetime
-from openai import OpenAI
-
 
 @ui.page('/')
 async def main_page():
@@ -21,17 +19,19 @@ async def main_page():
 
     class message:
         def __init__(self,
-                    base_url: str = 'https://127.0.0.1:1234/v1',
-                    api_key: str = None):
+                base_url: str = 'https://127.0.0.1:1234/v1',
+                api_key: str = None
+        ) -> None:
             self.message = []
             self.base_url = base_url
             self.api_key = api_key
-            self.client = OpenAI(
-                base_url=self.base_url,
-                api_key=self.api_key if self.api_key is not None else '',
-            )
         
-        def add(self, text: str, stamp: str = None, role: Literal['system', 'user', 'assistant'] = 'user') -> None:
+        def add(
+            self, 
+            text: str, 
+            stamp: str = None, 
+            role: Literal['system', 'user', 'assistant'] = 'user'
+        ) -> None:
             """
             向消息列表中添加消息，并在聊天框中显示。
             
@@ -110,7 +110,8 @@ async def main_page():
                 async with aiohttp.ClientSession() as session:
                     result = await session.get(
                         url=f'{self.base_url}/models',
-                        headers={ 'Authorization': f'Bearer {self.api_key}' }
+                        headers={ 'Authorization': f'Bearer {self.api_key}' },
+                        proxy=proxy_path.value if using_proxy.value else None,
                     )
                 models = await result.json()
                 print(f'after json: {models}')
@@ -273,6 +274,8 @@ async def main_page():
             with ui.scroll_area().classes('w-full flex-grow'):
                 apiPoint = ui.input('API 地址', value='http://localhost:1234/v1').classes('w-full').props('filled')
                 model_api_key = ui.input(label='API Key', placeholder='无需 API Key 请留空').classes('w-full').props('filled')
+                using_proxy = ui.switch(text='使用系统代理 (HTTP_PROXY / HTTPS_PROXY)')
+                proxy_path = ui.input(label='代理地址').classes('w-full').props('filled').bind_visibility_from(using_proxy, 'value')
                 model_temperature = ui.number(label='模型温度', value=0.6, min=0, max=1, step=0.1).classes('w-full').props('filled')
                 with ui.row(align_items='center').classes('w-full'):
                     using_model = ui.select(options=['不使用任何模型'], label='模型', value='不使用任何模型', new_value_mode='add').classes('flex-grow').props('filled')
